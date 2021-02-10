@@ -91,33 +91,38 @@ spec:
           {{- if eq .Values.database.type "sqlite" }}
           - name: DB_FLAVOR
             value: sqlite
-          {{- else if eq .Values.database.type "mysql" }}
+          {{- else if or (eq .Values.database.type "mysql") (eq .Values.database.type "postgresql") }}
           - name: DB_FLAVOR
-            value: mysql
+            value: {{ .Values.database.type }}
           - name: DB_USER
-            value: {{ required "database.mysql.user" .Values.database.mysql.user }}
+            {{- if and .Values.database.existingSecret .Values.database.userKey }}
+            valueFrom:
+              secretKeyRef:
+                name: {{ .Values.database.existingSecret }}
+                key: {{ .Values.database.userKey }}
+            {{- else }}
+            value: {{ required "database.user" .Values.database.user }}
+            {{- end }}
           - name: DB_PW
-            value: {{ required "database.mysql.password" .Values.database.mysql.password }}
+            {{- if and .Values.database.existingSecret .Values.database.passwordKey }}
+            valueFrom:
+              secretKeyRef:
+                name: {{ .Values.database.existingSecret }}
+                key: {{ .Values.database.passwordKey }}
+            {{- else }}
+            value: {{ required "database.password" .Values.database.password }}
+            {{- end }}
           - name: DB_NAME
-            value: {{ required "database.mysql.database" .Values.database.mysql.database }}
+            value: {{ required "database.database" .Values.database.database }}
           - name: DB_HOST
-            {{- if .Values.database.mysql.host }}
-            value: {{ .Values.database.mysql.host }}
+            {{- if eq .Values.database.type "mysql" }}
+            {{- if .Values.database.host }}
+            value: {{ .Values.database.host }}
             {{- else }}
             value: {{ include "mailu.fullname" . }}-mysql
             {{- end }}
-          {{- else if eq .Values.database.type "postgresql" }}
-          - name: DB_FLAVOR
-            value: postgresql
-          - name: DB_USER
-            value: {{ required "database.postgresql.user" .Values.database.postgresql.user }}
-          - name: DB_PW
-            value: {{ required "database.postgresql.password" .Values.database.postgresql.password }}
-          - name: DB_NAME
-            value: {{ required "database.postgresql.database" .Values.database.postgresql.database }}
-          - name: DB_HOST
-            {{- if .Values.database.postgresql.host }}
-            value: {{ .Values.database.postgresql.host }}
+            {{- else }}
+            value: {{ required "database.host" .Values.database.host }}
             {{- end }}
           {{- else }}
           value: {{ required "database.type must be one of sqlite/mysql/postgresql" .None }}
