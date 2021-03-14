@@ -180,39 +180,113 @@ spec:
   selector:
     app: {{ include "mailu.fullname" . }}
     component: front
+  type: {{ .Values.front.service.type }}
+{{- if .Values.front.service.clusterIP }}
+  clusterIP: {{ .Values.frontService.clusterIP }}
+{{- end }}
+{{- if .Values.front.service.externalIPs }}
+  externalIPs: {{ toYaml .Values.front.service.externalIPs | nindent 4 }}
+{{- end }}
+{{- if .Values.front.service.loadBalancerIP }}
+  loadBalancerIP: {{ .Values.front.service.loadBalancerIP }}
+{{- end }}
+{{- if .Values.front.service.loadBalancerSourceRanges }}
+  loadBalancerSourceRanges: {{ toYaml .Values.controller.service.loadBalancerSourceRanges | nindent 4 }}
+{{- end }}
+{{- if .Values.front.service.externalTrafficPolicy }}
+  externalTrafficPolicy: {{ .Values.front.service.externalTrafficPolicy }}
+{{- end }}
+{{- if .Values.front.service.sessionAffinity }}
+  sessionAffinity: {{ .Values.front.service.sessionAffinity }}
+{{- end }}
+{{- if .Values.front.service.healthCheckNodePort }}
+  healthCheckNodePort: {{ .Values.front.service.healthCheckNodePort }}
+{{- end }}
   ports:
+  {{- $setNodePorts := (or (eq .Values.front.service.type "NodePort") (eq .Values.front.service.type "LoadBalancer")) }}
   - name: pop3
-    port: 110
+    port: {{ .Values.front.service.ports.pop3 }}
     protocol: TCP
+  {{- if (and $setNodePorts (not (empty .Values.front.service.nodePorts.pop3))) }}
+    nodePort: {{ .Values.front.service.nodePorts.pop3 }}
+  {{- end }}
   - name: pop3s
-    port: 995
+    port: {{ .Values.front.service.ports.pop3s }}
     protocol: TCP
+  {{- if (and $setNodePorts (not (empty .Values.front.service.nodePorts.pop3s))) }}
+    nodePort: {{ .Values.front.service.nodePorts.pop3s }}
+  {{- end }}
   - name: imap
-    port: 143
+    port: {{ .Values.front.service.ports.imap }}
     protocol: TCP
+  {{- if (and $setNodePorts (not (empty .Values.front.service.nodePorts.imap))) }}
+    nodePort: {{ .Values.front.service.nodePorts.imap }}
+  {{- end }}
   - name: imaps
-    port: 993
+    port: {{ .Values.front.service.ports.imaps }}
     protocol: TCP
+  {{- if (and $setNodePorts (not (empty .Values.front.service.nodePorts.imaps))) }}
+    nodePort: {{ .Values.front.service.nodePorts.imaps }}
+  {{- end }}
   - name: smtp
-    port: 25
+    port: {{ .Values.front.service.ports.smtp }}
     protocol: TCP
+  {{- if (and $setNodePorts (not (empty .Values.front.service.nodePorts.smtp))) }}
+    nodePort: {{ .Values.front.service.nodePorts.smtp }}
+  {{- end }}
   - name: smtps
-    port: 465
+    port: {{ .Values.front.service.ports.smtps }}
     protocol: TCP
+  {{- if (and $setNodePorts (not (empty .Values.front.service.nodePorts.smtps))) }}
+    nodePort: {{ .Values.front.service.nodePorts.smtps }}
+  {{- end }}
   - name: smtpd
-    port: 587
+    port: {{ .Values.front.service.ports.smtpd }}
     protocol: TCP
+  {{- if (and $setNodePorts (not (empty .Values.front.service.nodePorts.smtpd))) }}
+    nodePort: {{ .Values.front.service.nodePorts.smtpd }}
+  {{- end }}
   - name: smtp-auth
-    port: 10025
+    port: {{ index .Values.front.service.ports "smtp-auth" }}
     protocol: TCP
+  {{- if (and $setNodePorts (not (empty (index .Values.front.service.nodePorts "smtp-auth" )))) }}
+    nodePort: {{ index .Values.front.service.nodePorts "smtp-auth" }}
+  {{- end }}
   - name: imap-auth
-    port: 10143
+    port: {{ index .Values.front.service.ports "imap-auth" }}
     protocol: TCP
+  {{- if (and $setNodePorts (not (empty (index .Values.front.service.nodePorts "imap-auth" )))) }}
+    nodePort: {{ index .Values.front.service.nodePorts "imap-auth" }}
+  {{- end }}
+{{ if not .Values.ingress.externalIngress }}
+  - name: http
+    port: {{ .Values.front.service.ports.http }}
+    protocol: TCP
+  {{- if (and $setNodePorts (not (empty .Values.front.service.nodePorts.http))) }}
+    nodePort: {{ .Values.front.service.nodePorts.http }}
+  {{- end }}
+  - name: https
+    port: {{ .Values.front.service.ports.https }}
+    protocol: TCP
+  {{- if (and $setNodePorts (not (empty .Values.front.service.nodePorts.https))) }}
+    nodePort: {{ .Values.front.service.nodePorts.https }}
+  {{- end }}
+{{end}}
+---
+{{ if .Values.ingress.externalIngress }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "mailu.fullname" . }}-front-http
+  labels:
+    app: {{ include "mailu.fullname" . }}
+    component: front
+spec:
+  selector:
+    app: {{ include "mailu.fullname" . }}
+    component: front
+  ports:
   - name: http
     port: 80
     protocol: TCP
-{{ if not .Values.ingress.externalIngress }}
-  - name: https
-    port: 443
-    protocol: TCP
-{{end}}
+{{ end }}
