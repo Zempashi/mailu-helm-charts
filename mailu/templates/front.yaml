@@ -176,6 +176,9 @@ metadata:
   labels:
     app: {{ include "mailu.fullname" . }}
     component: front
+  {{- with .Values.front.service.annotations }}
+  annotations: {{ toYaml . | nindent 4 }}
+  {{- end }}
 spec:
   selector:
     app: {{ include "mailu.fullname" . }}
